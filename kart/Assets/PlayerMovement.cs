@@ -1,37 +1,53 @@
 using UnityEngine;
+using static UnityEditor.Searcher.SearcherWindow.Alignment;
 
-public class PlayerMovement : MonoBehaviour
+[RequireComponent(typeof(Rigidbody))]
+public class CarController : MonoBehaviour
 {
-    public float initialSpeed = 2000f;
-    public float speed = 200f;
-    public float rotationSpeed = 100f; // Velocidade de rotação
+    public float acceleration = 1000f;
+    public float initiaAceleration = 1000f;
+    public float turnSpeed = 200f;
+    public float maxSpeed = 100f;
 
-    void Update()
+    private Rigidbody rb;
+
+    void Start()
     {
-        // Entrada do teclado
-        float horizontal = Input.GetAxis("Horizontal"); // A/D ou Setas Esquerda/Direita
-        float vertical = Input.GetAxis("Vertical");     // W/S ou Setas Cima/Baixo
+        rb = GetComponent<Rigidbody>();
+    }
 
-        // Ajuste da velocidade com base no input vertical
-        if (vertical > 0)
+    void FixedUpdate()
+    {
+        float verticalInput = Input.GetAxis("Vertical");     // W/S ou setas
+        float horizontalInput = Input.GetAxis("Horizontal"); // A/D ou setas
+
+        if (verticalInput > 0)
         {
-            speed = initialSpeed * 2;
+            acceleration = initiaAceleration * 1.5f;
         }
-        else if (vertical < 0)
+        else if (verticalInput < 0)
         {
-            speed = initialSpeed * 0.5f;
+            acceleration = initiaAceleration * 0.2f;
         }
         else
         {
-            speed = initialSpeed;
+            acceleration = initiaAceleration;
+        }
+        // Calcula a forÃ§a de avanÃ§o
+        Vector3 forwardForce = transform.forward * verticalInput * acceleration * Time.fixedDeltaTime;
+
+        // Aplica forÃ§a para mover o carro para frente/trÃ¡s
+        if (rb.linearVelocity.magnitude < maxSpeed)
+        {
+            rb.AddForce(forwardForce, ForceMode.Acceleration);
         }
 
-        // Movimento para frente/trás
-        Vector3 movement = transform.forward * vertical * speed * Time.deltaTime;
-        transform.Translate(movement, Space.World);
-
-        // Rotação com base no input horizontal (eixo Y)
-        float rotation = horizontal * rotationSpeed * Time.deltaTime;
-        transform.Rotate(0f, rotation, 0f);
+        // RotaÃ§Ã£o apenas se o carro estiver se movendo
+        if (rb.linearVelocity.magnitude > 0.1f)
+        {
+            float rotation = horizontalInput * turnSpeed * Time.fixedDeltaTime;
+            Quaternion turnOffset = Quaternion.Euler(0, rotation, 0);
+            rb.MoveRotation(rb.rotation * turnOffset);
+        }
     }
 }
